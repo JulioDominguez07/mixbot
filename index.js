@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const { createServer } = require("node:http");
 const {
   Client,
   EmbedBuilder,
@@ -44,6 +45,31 @@ const client = new Client({
 });
 
 const rest = new REST({ version: "10" }).setToken(BOT_TOKEN);
+
+const port = Number(process.env.PORT || 3000);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error("PORT must be a valid TCP port number.");
+}
+
+const server = createServer((request, response) => {
+  if (request.method === "GET" && request.url === "/health") {
+    response.writeHead(200, { "Content-Type": "text/plain" });
+    response.end("OK");
+    return;
+  }
+
+  response.writeHead(404, { "Content-Type": "text/plain" });
+  response.end("Not Found");
+});
+
+server.on("error", (error) => {
+  console.error("HTTP server failed to start:", error);
+  process.exit(1);
+});
+
+server.listen(port, "0.0.0.0", () => {
+  console.log(`HTTP health check listening on port ${port}.`);
+});
 
 async function generateTeams(guild, size) {
   const lobbyChannel = await guild.channels.fetch(LOBBY_VOICE_CHANNEL_ID);
